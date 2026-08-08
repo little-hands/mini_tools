@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>チャオチャオ サイコロ</title>
+<meta name="description" content="チャオチャオのサイコロ（1・2・3・4・✕・✕）をふるだけのシンプルなツール">
+<meta name="theme-color" content="#1b1033">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23f5c542'/><text x='50' y='72' font-size='62' text-anchor='middle' font-family='sans-serif' fill='%231b1033'>3</text></svg>">
+<style>
+  :root {
+    --bg: #1b1033;
+    --bg2: #2d1b57;
+    --gold: #f5c542;
+    --red: #ff5c6c;
+    --ink: #1b1033;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: radial-gradient(circle at 50% 20%, var(--bg2), var(--bg) 70%);
+    color: #fff;
+    font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    padding: 24px calc(24px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(24px + env(safe-area-inset-left));
+    user-select: none;
+  }
+  h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: .18em; opacity: .75; }
+
+  .die {
+    width: min(62vw, 260px);
+    aspect-ratio: 1;
+    border-radius: 22%;
+    background: linear-gradient(160deg, #fff, #e6e1d5);
+    box-shadow: 0 18px 40px rgba(0,0,0,.45), inset 0 -8px 18px rgba(0,0,0,.12);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: transform .12s ease;
+  }
+  .die:active { transform: scale(.96); }
+  .die.rolling { animation: shake .5s linear; }
+  @keyframes shake {
+    0%   { transform: rotate(0deg)   scale(1); }
+    25%  { transform: rotate(-14deg) scale(1.06); }
+    50%  { transform: rotate(12deg)  scale(.96); }
+    75%  { transform: rotate(-8deg)  scale(1.04); }
+    100% { transform: rotate(0deg)   scale(1); }
+  }
+  .face {
+    font-size: min(34vw, 150px);
+    font-weight: 800;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .face.x { color: var(--red); }
+  .face.idle { font-size: min(11vw, 44px); font-weight: 600; color: #9a93a8; }
+
+  button {
+    font: inherit;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    color: var(--ink);
+    background: var(--gold);
+    border: none;
+    border-radius: 999px;
+    padding: 16px 56px;
+    cursor: pointer;
+    box-shadow: 0 10px 24px rgba(245,197,66,.3);
+  }
+  button:active { transform: translateY(2px); }
+  button:disabled { opacity: .5; cursor: default; }
+
+  .log { min-height: 24px; font-size: 14px; letter-spacing: .12em; opacity: .6; }
+  .log b { color: var(--gold); font-weight: 700; }
+  .log b.x { color: var(--red); }
+</style>
+</head>
+<body>
+  <h1>CHAO CHAO DICE</h1>
+
+  <div class="die" id="die" role="button" tabindex="0" aria-label="サイコロをふる">
+    <div class="face idle" id="face">TAP</div>
+  </div>
+
+  <button id="roll">ふる</button>
+
+  <p class="log" id="log" aria-live="polite"></p>
+
+<script>
+  // 実物と同じ6面: 1・2・3・4・✕・✕（✕は2/6）
+  const FACES = ['1', '2', '3', '4', '✕', '✕'];
+  const HISTORY_MAX = 8;
+
+  const dieEl = document.getElementById('die');
+  const faceEl = document.getElementById('face');
+  const rollBtn = document.getElementById('roll');
+  const logEl = document.getElementById('log');
+  const history = [];
+  let rolling = false;
+
+  // 剰余バイアスのない一様乱数
+  function randomIndex(n) {
+    const limit = Math.floor(0x100000000 / n) * n;
+    const buf = new Uint32Array(1);
+    let v;
+    do { crypto.getRandomValues(buf); v = buf[0]; } while (v >= limit);
+    return v % n;
+  }
+
+  function render(face) {
+    faceEl.textContent = face;
+    faceEl.className = 'face' + (face === '✕' ? ' x' : '');
+  }
+
+  function roll() {
+    if (rolling) return;
+    rolling = true;
+    rollBtn.disabled = true;
+    dieEl.classList.remove('rolling');
+    void dieEl.offsetWidth; // アニメーションを再生し直すためのreflow
+    dieEl.classList.add('rolling');
+
+    // 転がっている間はランダムな面をパラパラ見せる
+    const flip = setInterval(() => render(FACES[randomIndex(FACES.length)]), 60);
+
+    setTimeout(() => {
+      clearInterval(flip);
+      const result = FACES[randomIndex(FACES.length)];
+      render(result);
+      history.unshift(result);
+      if (history.length > HISTORY_MAX) history.pop();
+      logEl.innerHTML = history
+        .map(f => `<b class="${f === '✕' ? 'x' : ''}">${f}</b>`)
+        .join(' <span style="opacity:.35">·</span> ');
+      rolling = false;
+      rollBtn.disabled = false;
+    }, 500);
+  }
+
+  rollBtn.addEventListener('click', roll);
+  dieEl.addEventListener('click', roll);
+  dieEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); roll(); }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === ' ' && e.target === document.body) { e.preventDefault(); roll(); }
+  });
+</script>
+</body>
+</html>
