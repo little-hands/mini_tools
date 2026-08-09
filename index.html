@@ -1,36 +1,124 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>あみだくじ抽選</title>
-<link rel="stylesheet" href="style.css" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8F%3C/text%3E%3C/svg%3E" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>mini tools</title>
+<meta name="description" content="ブラウザだけで動く、ちいさな道具箱">
+<meta name="theme-color" content="#1b1033">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23f5c542'/><text x='50' y='70' font-size='52' text-anchor='middle' font-family='sans-serif' fill='%231b1033'>%E2%9A%92</text></svg>">
+<style>
+  :root {
+    --bg: #1b1033;
+    --bg2: #2d1b57;
+    --gold: #f5c542;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { min-height: 100%; margin: 0; }
+  body {
+    background: radial-gradient(circle at 50% 15%, var(--bg2), var(--bg) 70%);
+    background-attachment: fixed;
+    color: #fff;
+    font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    padding: 56px calc(24px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(24px + env(safe-area-inset-left));
+  }
+
+  header { text-align: center; }
+  h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: .28em;
+    text-indent: .28em;
+    color: var(--gold);
+  }
+  .lead { margin: 10px 0 0; font-size: 14px; letter-spacing: .06em; opacity: .6; }
+
+  .tools {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    width: 100%;
+    max-width: 720px;
+  }
+
+  .card {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 22px 24px;
+    border-radius: 18px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    color: inherit;
+    text-decoration: none;
+    transition: transform .15s ease, background .15s ease, border-color .15s ease;
+  }
+  .card:hover, .card:focus-visible {
+    transform: translateY(-3px);
+    background: rgba(255,255,255,.11);
+    border-color: rgba(245,197,66,.5);
+    outline: none;
+  }
+  .icon {
+    flex: none;
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: linear-gradient(160deg, #fff, #e6e1d5);
+    color: #1b1033;
+    display: grid;
+    place-items: center;
+    font-size: 26px;
+    font-weight: 800;
+  }
+  .name { display: block; font-size: 17px; font-weight: 700; letter-spacing: .04em; }
+  .desc { display: block; margin-top: 5px; font-size: 13px; line-height: 1.5; opacity: .6; }
+
+  footer { font-size: 12px; letter-spacing: .1em; opacity: .35; }
+</style>
 </head>
 <body>
-  <main class="app">
-    <header class="header">
-      <h1>📏 あみだくじ抽選</h1>
-    </header>
+  <header>
+    <h1>MINI TOOLS</h1>
+    <p class="lead">ブラウザだけで動く、ちいさな道具箱</p>
+  </header>
 
-    <section class="panel">
-      <label for="entries" class="label">候補リスト（改行区切り）</label>
-      <textarea id="entries" rows="5" placeholder="A&#10;B&#10;C&#10;D&#10;E"></textarea>
-      <div class="row">
-        <label class="count-label">当選数 <input type="number" id="winnerCount" value="1" min="1" max="100" /></label>
-      </div>
-      <button id="drawBtn" type="button" class="draw-btn">✦ START ✦</button>
-      <p class="hint">Cmd / Ctrl + Enter でも抽選</p>
-    </section>
+  <nav class="tools" id="tools"></nav>
 
-    <section class="stage">
-      <div class="board-wrap">
-        <svg id="amida" xmlns="http://www.w3.org/2000/svg"></svg>
-      </div>
-      <ul id="winners" class="winners"></ul>
-    </section>
-  </main>
+  <footer>little-hands</footer>
 
-  <script src="app.js"></script>
+<script>
+  // ツールを増やすときはここに1行足す
+  const TOOLS = [
+    {
+      path: 'amidakuji/',
+      icon: '📏',
+      name: 'あみだくじ抽選',
+      desc: '候補と当選数を入れると、あみだの線をたどって当選者を決める',
+    },
+    {
+      path: 'dice/',
+      icon: '🎲',
+      name: 'チャオチャオ サイコロ',
+      desc: '1・2・3・4・✕・✕ の6面。ボードゲーム チャオチャオ用',
+    },
+  ];
+
+  document.getElementById('tools').innerHTML = TOOLS.map(t => `
+    <a class="card" href="${t.path}">
+      <span class="icon" aria-hidden="true">${t.icon}</span>
+      <span>
+        <span class="name">${t.name}</span>
+        <span class="desc">${t.desc}</span>
+      </span>
+    </a>
+  `).join('');
+</script>
 </body>
 </html>
